@@ -1,0 +1,25 @@
+nohup: ignoring input
+2026-04-30 20:06:03.777844: I tensorflow/core/platform/cpu_feature_guard.cc:182] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-04-30 20:06:04.464810: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+============================================================
+TensorFlow version: 2.13.1
+Detected GPUs: [PhysicalDevice(name='/physical_device:GPU:0', device_type='GPU')]
+GPU memory_growth 설정 완료
+mixed precision 활성화: mixed_float16
+============================================================
+BASE_DIR: /data/AI_CAR
+DATA_DIR: /data/AI_CAR/data/video
+MODEL_DIR: /data/AI_CAR/model
+OUTPUT_DIR: /data/AI_CAR/output
+BATCH_SIZE: 32
+EPOCHS: 1
+Traceback (most recent call last):
+  File "train_dgx_ai_car.py", line 439, in <module>
+    main()
+  File "train_dgx_ai_car.py", line 357, in main
+    df = load_data(DATA_DIR)
+  File "train_dgx_ai_car.py", line 174, in load_data
+    raise RuntimeError(
+RuntimeError: PNG 이미지가 없습니다: /data/AI_CAR/data/video
+예상 예시: /data/AI_CAR/data/video/train_00000_090.png
