@@ -30,20 +30,20 @@ def motor_back(speed):
     PWMB.value = speed
     
 def motor_left(speed):
-    AIN1.value = 1
-    AIN2.value = 0
-    PWMA.value = 0.0
+    AIN1.value = 0
+    AIN2.value = 1
+    PWMA.value = speed * 0.5
     BIN1.value = 0
     BIN2.value = 1
-    PWMB.value = speed
+    PWMB.value = speed * 1.5
     
 def motor_right(speed):
     AIN1.value = 0
     AIN2.value = 1
-    PWMA.value = speed
-    BIN1.value = 1
-    BIN2.value = 0
-    PWMB.value = 0.0
+    PWMA.value = speed * 1.5
+    BIN1.value = 0
+    BIN2.value = 1
+    PWMB.value = speed * 0.5
 
 def motor_stop():
     AIN1.value = 0
