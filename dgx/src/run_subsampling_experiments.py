@@ -74,7 +74,8 @@ USE_MIXED_PRECISION = True
 # 실험 목록: 여기에 원하는 서브샘플링 조합을 계속 추가하면 됨
 # None = 해당 폴더 전체 사용. max_count > 원본이면 오버샘플링(무작위 복제).
 #
-# 원본 데이터 분포: go 1907 / left 3034 / right 3519 (총 8460)
+# 원본 데이터 분포 (0바이트 파일 정리 후):
+#   go 1789 / left 3005 / right 3126 (총 7920)
 #
 # [지난 실험에서 얻은 인사이트 — 개선 방향 설계 근거]
 # - exp10(전체 4276장)이 best (val_mae 7.39 / val_loss 140.86)
@@ -92,55 +93,64 @@ USE_MIXED_PRECISION = True
 EXPERIMENTS = [
     # ----- Phase A: 자연 분포 (베이스라인) -----
     {
+        # 1789 + 3005 + 3126 = 7920
         "name": "exp01_natural_full",
         "samples": {"train_go": None, "train_left": None, "train_right": None},
     },
     {
+        # 1252 + 2104 + 2188 = 5544 (각 70%)
         "name": "exp02_natural_70pct",
-        "samples": {"train_go": 1335, "train_left": 2124, "train_right": 2463},
+        "samples": {"train_go": 1252, "train_left": 2104, "train_right": 2188},
     },
 
-    # ----- Phase B: 1:1:1 균형 (go 1907 기준) -----
+    # ----- Phase B: 1:1:1 균형 (go 약간 오버샘플) -----
     {
-        "name": "exp03_balanced_1907",
-        "samples": {"train_go": 1907, "train_left": 1907, "train_right": 1907},
+        # 2000 × 3 = 6000 (go ×1.12 오버샘플)
+        "name": "exp03_balanced_2000",
+        "samples": {"train_go": 2000, "train_left": 2000, "train_right": 2000},
     },
 
     # ----- Phase C: go 오버샘플링으로 균형 (go-dominant 재현 단계별) -----
     # go를 left/right 수준으로 끌어올려 균형, 그 다음 점진적으로 go 우세로
     {
-        "name": "exp04_go3034_balanced_with_left",
-        "samples": {"train_go": 3034, "train_left": 3034, "train_right": 3034},
+        # 3005 × 3 = 9015 (go ×1.68, left 그대로, right 약간 줄임)
+        "name": "exp04_balanced_3005",
+        "samples": {"train_go": 3005, "train_left": 3005, "train_right": 3005},
     },
     {
-        "name": "exp05_go3519_full_balanced",
-        "samples": {"train_go": 3519, "train_left": 3519, "train_right": 3519},
+        # 3126 × 3 = 9378 (go ×1.75, left ×1.04, right 그대로)
+        "name": "exp05_balanced_3126",
+        "samples": {"train_go": 3126, "train_left": 3126, "train_right": 3126},
     },
 
-    # ----- Phase D: go-dominant (옛 best 패턴 재현) -----
-    # 옛 best는 go 비중 76%. 새 데이터에서 유사 비율을 점진적으로 시도
-    # 단순 자연 left/right 유지 + go만 키움
+    # ----- Phase D: go-dominant + left/right 자연 (옛 best 패턴 재현) -----
+    # 옛 best는 go 비중 76%. 새 데이터에서 점진적으로 go 우세 키움
     {
+        # 4500 + 3005 + 3126 = 10631 (go 비중 ≈ 42%)
         "name": "exp06_go4500_natural_lr",
-        "samples": {"train_go": 4500, "train_left": 3034, "train_right": 3519},
+        "samples": {"train_go": 4500, "train_left": 3005, "train_right": 3126},
     },
     {
+        # 6000 + 3005 + 3126 = 12131 (go 비중 ≈ 49%)
         "name": "exp07_go6000_natural_lr",
-        "samples": {"train_go": 6000, "train_left": 3034, "train_right": 3519},
+        "samples": {"train_go": 6000, "train_left": 3005, "train_right": 3126},
     },
     {
+        # 8000 + 3005 + 3126 = 14131 (go 비중 ≈ 57%)
         "name": "exp08_go8000_natural_lr",
-        "samples": {"train_go": 8000, "train_left": 3034, "train_right": 3519},
+        "samples": {"train_go": 8000, "train_left": 3005, "train_right": 3126},
     },
 
     # ----- Phase E: go-dominant + left/right 축소 (옛 분포 비율 모방) -----
     # 옛 분포 비율 go:left:right = 3252:466:558 ≈ 7:1:1.2 를 새 데이터로 흉내
     # left/right를 줄이고 go를 크게
     {
+        # 5000 + 1500 + 1750 = 8250 (go 비중 ≈ 61%)
         "name": "exp09_go5000_lr_small",
         "samples": {"train_go": 5000, "train_left": 1500, "train_right": 1750},
     },
     {
+        # 7000 + 1000 + 1200 = 9200 (go 비중 ≈ 76%, 옛 best와 동일)
         "name": "exp10_go7000_lr_small_old_ratio",
         "samples": {"train_go": 7000, "train_left": 1000, "train_right": 1200},
     },
