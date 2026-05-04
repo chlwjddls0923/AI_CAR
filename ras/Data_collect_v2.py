@@ -1,6 +1,7 @@
 import mycamera
 import cv2
 import os
+import re
 import time
 from gpiozero import DigitalOutputDevice
 from gpiozero import PWMOutputDevice
@@ -68,9 +69,22 @@ def main():
     os.makedirs("/home/pi/AI_CAR/video/train_left",  exist_ok=True)
     os.makedirs("/home/pi/AI_CAR/video/train_right", exist_ok=True)
 
-    i_go    = 0
-    i_left  = 0
-    i_right = 0
+    # 기존 파일명에서 최대 인덱스를 찾아 그 다음 번호부터 저장 (덮어쓰기 방지)
+    def next_index(folder, prefix):
+        pattern = re.compile(rf"^{re.escape(prefix)}_(\d+)_\d+\.png$")
+        max_idx = -1
+        for fname in os.listdir(folder):
+            m = pattern.match(fname)
+            if m:
+                idx = int(m.group(1))
+                if idx > max_idx:
+                    max_idx = idx
+        return max_idx + 1
+
+    i_go    = next_index("/home/pi/AI_CAR/video/train_go",    "train_go")
+    i_left  = next_index("/home/pi/AI_CAR/video/train_left",  "train_left")
+    i_right = next_index("/home/pi/AI_CAR/video/train_right", "train_right")
+    print(f"start index -> go:{i_go}, left:{i_left}, right:{i_right}")
     frame_count = 0  # 5프레임 간격 저장용 카운터
 
     carState = "stop"
