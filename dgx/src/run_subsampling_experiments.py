@@ -72,47 +72,77 @@ LEARNING_RATE = 1e-3
 USE_MIXED_PRECISION = True
 
 # 실험 목록: 여기에 원하는 서브샘플링 조합을 계속 추가하면 됨
-# None = 해당 폴더 전체 사용
+# None = 해당 폴더 전체 사용. max_count > 원본이면 오버샘플링(무작위 복제).
+#
+# 원본 데이터 분포: go 1907 / left 3034 / right 3519 (총 8460)
+#
+# [지난 실험에서 얻은 인사이트 — 개선 방향 설계 근거]
+# - exp10(전체 4276장)이 best (val_mae 7.39 / val_loss 140.86)
+#   * 옛 분포: go 3252 / left 466 / right 558 → go가 76%로 압도적 우세
+# - exp09(go=2000) 2위 → go 양 늘리기가 핵심
+# - 4500장 미만 실험에서 학습 발산 빈번(r² 음수) → 모든 실험 5500장 이상으로
+# - 불균형 자연 분포(go-dominant)가 1:1:1 균형보다 우수했음
+#
+# [설계 원칙]
+# - 옛 best의 핵심은 "go 우세" — 새 데이터는 go가 가장 작으므로 오버샘플링 필요
+# - 3축 비교: (1) 자연 분포 (2) 1:1:1 균형 (3) go 오버샘플링으로 go-dominant 재현
+# - 모든 실험 total ≥ 5500
+# - 주의: 이 파일은 데이터 증강 없음 → 오버샘플링은 동일 이미지 반복 학습 (과적합 위험)
+#         비율 best 탐색에는 유효, 절대 성능 수치는 train_teacher.py(증강 ON)에서 재검증
 EXPERIMENTS = [
+    # ----- Phase A: 자연 분포 (베이스라인) -----
     {
-        "name": "exp01_go1000_left466_right558",
-        "samples": {"train_go": 1000, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp02_go500_left466_right558",
-        "samples": {"train_go": 500, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp03_go600_left466_right558",
-        "samples": {"train_go": 600, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp04_go700_left466_right558",
-        "samples": {"train_go": 700, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp05_go800_left466_right558",
-        "samples": {"train_go": 800, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp06_go900_left466_right558",
-        "samples": {"train_go": 900, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp07_go1200_left466_right558",
-        "samples": {"train_go": 1200, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp08_go1500_left466_right558",
-        "samples": {"train_go": 1500, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp09_go2000_left466_right558",
-        "samples": {"train_go": 2000, "train_left": 466, "train_right": 558},
-    },
-    {
-        "name": "exp10_all_data",
+        "name": "exp01_natural_full",
         "samples": {"train_go": None, "train_left": None, "train_right": None},
+    },
+    {
+        "name": "exp02_natural_70pct",
+        "samples": {"train_go": 1335, "train_left": 2124, "train_right": 2463},
+    },
+
+    # ----- Phase B: 1:1:1 균형 (go 1907 기준) -----
+    {
+        "name": "exp03_balanced_1907",
+        "samples": {"train_go": 1907, "train_left": 1907, "train_right": 1907},
+    },
+
+    # ----- Phase C: go 오버샘플링으로 균형 (go-dominant 재현 단계별) -----
+    # go를 left/right 수준으로 끌어올려 균형, 그 다음 점진적으로 go 우세로
+    {
+        "name": "exp04_go3034_balanced_with_left",
+        "samples": {"train_go": 3034, "train_left": 3034, "train_right": 3034},
+    },
+    {
+        "name": "exp05_go3519_full_balanced",
+        "samples": {"train_go": 3519, "train_left": 3519, "train_right": 3519},
+    },
+
+    # ----- Phase D: go-dominant (옛 best 패턴 재현) -----
+    # 옛 best는 go 비중 76%. 새 데이터에서 유사 비율을 점진적으로 시도
+    # 단순 자연 left/right 유지 + go만 키움
+    {
+        "name": "exp06_go4500_natural_lr",
+        "samples": {"train_go": 4500, "train_left": 3034, "train_right": 3519},
+    },
+    {
+        "name": "exp07_go6000_natural_lr",
+        "samples": {"train_go": 6000, "train_left": 3034, "train_right": 3519},
+    },
+    {
+        "name": "exp08_go8000_natural_lr",
+        "samples": {"train_go": 8000, "train_left": 3034, "train_right": 3519},
+    },
+
+    # ----- Phase E: go-dominant + left/right 축소 (옛 분포 비율 모방) -----
+    # 옛 분포 비율 go:left:right = 3252:466:558 ≈ 7:1:1.2 를 새 데이터로 흉내
+    # left/right를 줄이고 go를 크게
+    {
+        "name": "exp09_go5000_lr_small",
+        "samples": {"train_go": 5000, "train_left": 1500, "train_right": 1750},
+    },
+    {
+        "name": "exp10_go7000_lr_small_old_ratio",
+        "samples": {"train_go": 7000, "train_left": 1000, "train_right": 1200},
     },
 ]
 
@@ -192,9 +222,19 @@ def load_data_with_subsampling(sample_config: dict, seed: int = 42) -> pd.DataFr
 
         original_count = len(files)
         if max_count is not None:
-            files = files[:min(max_count, len(files))]
+            if max_count <= original_count:
+                # 언더샘플링: 앞에서 잘라 사용
+                files = files[:max_count]
+            else:
+                # 오버샘플링: 부족분을 무작위 복제로 채움
+                # 이 파일은 데이터 증강 없음 → 동일 이미지가 여러 번 학습됨 (과적합 위험)
+                # 단 모든 실험에 동일 조건이라 비율 비교 목적으로는 유효
+                extra = max_count - original_count
+                files = files + rng.choices(files, k=extra)
 
-        print(f"{folder_name}: 원본 {original_count}장 -> 사용 {len(files)}장")
+        is_oversampled = (max_count is not None and max_count > original_count)
+        suffix = " (oversampled)" if is_oversampled else ""
+        print(f"{folder_name}: 원본 {original_count}장 -> 사용 {len(files)}장{suffix}")
 
         for filename in files:
             try:
